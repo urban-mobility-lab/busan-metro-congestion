@@ -8,8 +8,10 @@
 busan-metro-congestion/
 │
 ├── .github/
-│   └── workflows/
-│       └── ci.yml                 # GitHub Actions CI 워크플로우 (uv 기반 린트/포맷 및 pytest 테스트 검증)
+│   ├── ISSUE_TEMPLATE/            # GitHub Issue 템플릿 (feat.md, fix.md, docs_chore.md)
+│   ├── workflows/
+│   │   └── ci.yml                 # GitHub Actions CI 워크플로우 (uv 기반 린트/포맷 및 pytest 테스트 검증)
+│   └── pull_request_template.md   # GitHub PR 체크리스트 템플릿
 │
 ├── .dockerignore                  # Docker 이미지 빌드 제외 대상 정의
 ├── .env.template                  # 공공데이터포털 API 키 환경변수 템플릿
