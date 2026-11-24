@@ -1,0 +1,572 @@
+{
+  "ymd_subway_only": {
+    "group_name": "ymd_subway_only",
+    "label": "Set 0: 순수 년·월·일 + 지하철 (7종)",
+    "feature_count": 7,
+    "lgb": {
+      "model_name": "LightGBM",
+      "baseline_metrics": {
+        "rmse": 281.827,
+        "mae": 146.5698,
+        "wape": 22.88586666666667,
+        "peak_mae": 282.1085,
+        "r2": 0.8847333333333333,
+        "pearson_r": 0.9410666666666666
+      },
+      "best_metrics": {
+        "rmse": 275.05806666666666,
+        "mae": 143.3142,
+        "wape": 22.377566666666667,
+        "peak_mae": 273.7512,
+        "r2": 0.8902000000000001,
+        "pearson_r": 0.9441
+      },
+      "best_params": {
+        "n_estimators": 80,
+        "learning_rate": 0.056904137161934674,
+        "num_leaves": 87,
+        "max_depth": 10,
+        "min_child_samples": 43,
+        "subsample": 0.6832682843229386,
+        "colsample_bytree": 0.8403121104530539,
+        "reg_alpha": 0.010606020863005895,
+        "reg_lambda": 1.0439853715927245
+      },
+      "avg_fit_sec": 1.0638970534006755,
+      "avg_pred_sec": 0.27259524663289386,
+      "improvements": {
+        "rmse_diff": -6.768933333333337,
+        "rmse_impr_pct": 2.401804416657501,
+        "mae_diff": -3.255599999999987,
+        "mae_impr_pct": 2.221194270579606
+      },
+      "elapsed_seconds": 117.57887387275696
+    },
+    "rf": {
+      "model_name": "Random Forest",
+      "baseline_metrics": {
+        "rmse": 279.7054666666667,
+        "mae": 139.73833333333334,
+        "wape": 21.8192,
+        "peak_mae": 275.4119666666667,
+        "r2": 0.8864666666666666,
+        "pearson_r": 0.9417666666666666
+      },
+      "best_metrics": {
+        "rmse": 265.36373333333336,
+        "mae": 129.94219999999999,
+        "wape": 20.289600000000004,
+        "peak_mae": 262.2350333333334,
+        "r2": 0.8978,
+        "pearson_r": 0.9476333333333334
+      },
+      "best_params": {
+        "n_estimators": 75,
+        "max_depth": 16,
+        "min_samples_split": 8,
+        "min_samples_leaf": 3,
+        "max_samples": 0.3
+      },
+      "avg_fit_sec": 6.6321907838185625,
+      "avg_pred_sec": 0.45950714747111004,
+      "improvements": {
+        "rmse_diff": -14.341733333333366,
+        "rmse_impr_pct": 5.127441198861098,
+        "mae_diff": -9.796133333333358,
+        "mae_impr_pct": 7.010340755936709
+      },
+      "elapsed_seconds": 227.23712396621704
+    },
+    "lstm": {
+      "model_name": "MetroLSTM",
+      "baseline_metrics": {
+        "rmse": 294.65956666666665,
+        "mae": 157.46473333333333,
+        "wape": 24.5866,
+        "peak_mae": 285.3470333333333,
+        "r2": 0.8740333333333333,
+        "pearson_r": 0.9352
+      },
+      "best_metrics": {
+        "rmse": 288.15273333333334,
+        "mae": 150.08693333333335,
+        "wape": 23.435266666666667,
+        "peak_mae": 281.94453333333337,
+        "r2": 0.8795000000000001,
+        "pearson_r": 0.9380000000000001
+      },
+      "best_params": {
+        "hidden_dim1": 128,
+        "hidden_dim2": 64,
+        "dropout_rate": 0.1,
+        "lr": 0.0035067764992972213,
+        "epochs": 7
+      },
+      "avg_fit_sec": 16.46856991449992,
+      "avg_pred_sec": 1.278364102045695,
+      "improvements": {
+        "rmse_diff": -6.506833333333304,
+        "rmse_impr_pct": 2.2082545654097676,
+        "mae_diff": -7.377799999999979,
+        "mae_impr_pct": 4.6853665857878735
+      },
+      "elapsed_seconds": 703.364209651947
+    }
+  },
+  "subway_calendar": {
+    "group_name": "subway_calendar",
+    "label": "Set 1: 지하철 + 날짜 (기저 13종)",
+    "feature_count": 13,
+    "lgb": {
+      "model_name": "LightGBM",
+      "baseline_metrics": {
+        "rmse": 189.3021666666667,
+        "mae": 98.37053333333331,
+        "wape": 15.359833333333333,
+        "peak_mae": 148.06293333333335,
+        "r2": 0.9479666666666665,
+        "pearson_r": 0.9744333333333333
+      },
+      "best_metrics": {
+        "rmse": 141.12663333333333,
+        "mae": 69.0083,
+        "wape": 10.775166666666665,
+        "peak_mae": 95.07716666666666,
+        "r2": 0.9710666666666666,
+        "pearson_r": 0.9856666666666666
+      },
+      "best_params": {
+        "n_estimators": 160,
+        "learning_rate": 0.14773209532401602,
+        "num_leaves": 79,
+        "max_depth": 9,
+        "min_child_samples": 32,
+        "subsample": 0.7178206351784565,
+        "colsample_bytree": 0.7130726283917582,
+        "reg_alpha": 0.11288370405843942,
+        "reg_lambda": 0.09753053185235536
+      },
+      "avg_fit_sec": 1.826664129892985,
+      "avg_pred_sec": 0.7017910480499268,
+      "improvements": {
+        "rmse_diff": -48.17553333333336,
+        "rmse_impr_pct": 25.44901317382352,
+        "mae_diff": -29.362233333333307,
+        "mae_impr_pct": 29.848606425501384
+      },
+      "elapsed_seconds": 0.0
+    },
+    "rf": {
+      "model_name": "Random Forest",
+      "baseline_metrics": {
+        "rmse": 190.68293333333335,
+        "mae": 89.43653333333333,
+        "wape": 13.964866666666666,
+        "peak_mae": 140.1851,
+        "r2": 0.9472333333333333,
+        "pearson_r": 0.9735333333333335
+      },
+      "best_metrics": {
+        "rmse": 129.70633333333333,
+        "mae": 54.7268,
+        "wape": 8.545233333333334,
+        "peak_mae": 70.27613333333333,
+        "r2": 0.9756,
+        "pearson_r": 0.9879000000000001
+      },
+      "best_params": {
+        "n_estimators": 75,
+        "max_depth": 16,
+        "min_samples_split": 8,
+        "min_samples_leaf": 3,
+        "max_samples": 0.3
+      },
+      "avg_fit_sec": 9.795223236083984,
+      "avg_pred_sec": 0.5225834846496582,
+      "improvements": {
+        "rmse_diff": -60.97660000000002,
+        "rmse_impr_pct": 31.97800607220923,
+        "mae_diff": -34.70973333333333,
+        "mae_impr_pct": 38.80934562162517
+      },
+      "elapsed_seconds": 0.0
+    },
+    "lstm": {
+      "model_name": "MetroLSTM",
+      "baseline_metrics": {
+        "rmse": 205.8242333333333,
+        "mae": 126.07390000000002,
+        "wape": 19.685266666666667,
+        "peak_mae": 158.18963333333332,
+        "r2": 0.9385,
+        "pearson_r": 0.9712000000000001
+      },
+      "best_metrics": {
+        "rmse": 163.49373333333332,
+        "mae": 93.0831,
+        "wape": 14.533900000000001,
+        "peak_mae": 121.35726666666666,
+        "r2": 0.9611999999999999,
+        "pearson_r": 0.9811
+      },
+      "best_params": {
+        "hidden_dim1": 128,
+        "hidden_dim2": 64,
+        "dropout_rate": 0.1,
+        "lr": 0.0035067764992972213,
+        "epochs": 7
+      },
+      "avg_fit_sec": 17.905171712239582,
+      "avg_pred_sec": 1.375321865081787,
+      "improvements": {
+        "rmse_diff": -42.33049999999997,
+        "rmse_impr_pct": 20.566334349680552,
+        "mae_diff": -32.99080000000002,
+        "mae_impr_pct": 26.16782696497849
+      },
+      "elapsed_seconds": 0.0
+    }
+  },
+  "subway_calendar_weather": {
+    "group_name": "subway_calendar_weather",
+    "label": "Set 2: + 기상 예보 추가 (21종)",
+    "feature_count": 21,
+    "lgb": {
+      "model_name": "LightGBM",
+      "baseline_metrics": {
+        "rmse": 187.59783333333334,
+        "mae": 97.17923333333333,
+        "wape": 15.173866666666667,
+        "peak_mae": 144.74773333333331,
+        "r2": 0.9489333333333333,
+        "pearson_r": 0.9749666666666666
+      },
+      "best_metrics": {
+        "rmse": 147.60506666666666,
+        "mae": 72.69153333333334,
+        "wape": 11.350333333333333,
+        "peak_mae": 102.0575,
+        "r2": 0.9683666666666667,
+        "pearson_r": 0.9843666666666667
+      },
+      "best_params": {
+        "n_estimators": 100,
+        "learning_rate": 0.1445120681914555,
+        "num_leaves": 75,
+        "max_depth": 10,
+        "min_child_samples": 16,
+        "subsample": 0.6905261737864592,
+        "colsample_bytree": 0.6973026262821107,
+        "reg_alpha": 0.03404078079330015,
+        "reg_lambda": 0.0011051473116132937
+      },
+      "avg_fit_sec": 1.704945723215739,
+      "avg_pred_sec": 0.513634204864502,
+      "improvements": {
+        "rmse_diff": -39.99276666666668,
+        "rmse_impr_pct": 21.31835211316407,
+        "mae_diff": -24.48769999999999,
+        "mae_impr_pct": 25.19849062402563
+      },
+      "elapsed_seconds": 0.0
+    },
+    "rf": {
+      "model_name": "Random Forest",
+      "baseline_metrics": {
+        "rmse": 190.91853333333333,
+        "mae": 89.25543333333333,
+        "wape": 13.936566666666666,
+        "peak_mae": 139.84336666666664,
+        "r2": 0.9470999999999999,
+        "pearson_r": 0.9734666666666666
+      },
+      "best_metrics": {
+        "rmse": 131.05939999999998,
+        "mae": 55.27883333333333,
+        "wape": 8.631433333333334,
+        "peak_mae": 72.32503333333334,
+        "r2": 0.9750666666666666,
+        "pearson_r": 0.9876
+      },
+      "best_params": {
+        "n_estimators": 75,
+        "max_depth": 16,
+        "min_samples_split": 8,
+        "min_samples_leaf": 3,
+        "max_samples": 0.3
+      },
+      "avg_fit_sec": 17.072835206985474,
+      "avg_pred_sec": 0.620432456334432,
+      "improvements": {
+        "rmse_diff": -59.85913333333335,
+        "rmse_impr_pct": 31.353233386107448,
+        "mae_diff": -33.9766,
+        "mae_impr_pct": 38.06670219516048
+      },
+      "elapsed_seconds": 0.0
+    },
+    "lstm": {
+      "model_name": "MetroLSTM",
+      "baseline_metrics": {
+        "rmse": 219.4461,
+        "mae": 152.4488,
+        "wape": 23.803833333333333,
+        "peak_mae": 175.69116666666665,
+        "r2": 0.9301333333333334,
+        "pearson_r": 0.9706666666666667
+      },
+      "best_metrics": {
+        "rmse": 170.39166666666668,
+        "mae": 92.23073333333332,
+        "wape": 14.400766666666668,
+        "peak_mae": 126.74836666666666,
+        "r2": 0.9578333333333333,
+        "pearson_r": 0.9792333333333333
+      },
+      "best_params": {
+        "hidden_dim1": 128,
+        "hidden_dim2": 64,
+        "dropout_rate": 0.1,
+        "lr": 0.0035067764992972213,
+        "epochs": 7
+      },
+      "avg_fit_sec": 15.892601569493612,
+      "avg_pred_sec": 1.2193516095479329,
+      "improvements": {
+        "rmse_diff": -49.05443333333332,
+        "rmse_impr_pct": 22.35375034385816,
+        "mae_diff": -60.21806666666669,
+        "mae_impr_pct": 39.50051864407374
+      },
+      "elapsed_seconds": 0.0
+    }
+  },
+  "subway_calendar_festival": {
+    "group_name": "subway_calendar_festival",
+    "label": "Set 3: + 대규모 행사 추가 (17종)",
+    "feature_count": 17,
+    "lgb": {
+      "model_name": "LightGBM",
+      "baseline_metrics": {
+        "rmse": 187.7292666666667,
+        "mae": 98.72986666666667,
+        "wape": 15.415966666666668,
+        "peak_mae": 148.8972,
+        "r2": 0.9488333333333333,
+        "pearson_r": 0.9749
+      },
+      "best_metrics": {
+        "rmse": 141.239,
+        "mae": 70.02046666666666,
+        "wape": 10.933266666666666,
+        "peak_mae": 96.45783333333334,
+        "r2": 0.9710666666666666,
+        "pearson_r": 0.9857
+      },
+      "best_params": {
+        "n_estimators": 200,
+        "learning_rate": 0.11977002942335377,
+        "num_leaves": 83,
+        "max_depth": 10,
+        "min_child_samples": 31,
+        "subsample": 0.7764030625412304,
+        "colsample_bytree": 0.6827141160382199,
+        "reg_alpha": 0.05731431972444042,
+        "reg_lambda": 0.04444744110180408
+      },
+      "avg_fit_sec": 5.228299061457316,
+      "avg_pred_sec": 1.4443786938985188,
+      "improvements": {
+        "rmse_diff": -46.490266666666685,
+        "rmse_impr_pct": 24.764527924788148,
+        "mae_diff": -28.709400000000002,
+        "mae_impr_pct": 29.078738753825256
+      },
+      "elapsed_seconds": 0.0
+    },
+    "rf": {
+      "model_name": "Random Forest",
+      "baseline_metrics": {
+        "rmse": 189.17530000000002,
+        "mae": 89.9207,
+        "wape": 14.040466666666667,
+        "peak_mae": 141.00809999999998,
+        "r2": 0.9480666666666666,
+        "pearson_r": 0.9739666666666666
+      },
+      "best_metrics": {
+        "rmse": 129.68736666666666,
+        "mae": 55.443000000000005,
+        "wape": 8.657066666666667,
+        "peak_mae": 71.33910000000002,
+        "r2": 0.9755666666666666,
+        "pearson_r": 0.9878333333333332
+      },
+      "best_params": {
+        "n_estimators": 50,
+        "max_depth": 16,
+        "min_samples_split": 9,
+        "min_samples_leaf": 2,
+        "max_samples": 0.3
+      },
+      "avg_fit_sec": 9.269913276036581,
+      "avg_pred_sec": 0.5158926645914713,
+      "improvements": {
+        "rmse_diff": -59.48793333333336,
+        "rmse_impr_pct": 31.445930485287114,
+        "mae_diff": -34.47769999999999,
+        "mae_impr_pct": 38.34233941684172
+      },
+      "elapsed_seconds": 202.02067399024963
+    },
+    "lstm": {
+      "model_name": "MetroLSTM",
+      "baseline_metrics": {
+        "rmse": 202.05146666666667,
+        "mae": 120.92686666666668,
+        "wape": 18.8826,
+        "peak_mae": 157.57496666666668,
+        "r2": 0.9407333333333333,
+        "pearson_r": 0.9716999999999999
+      },
+      "best_metrics": {
+        "rmse": 168.03413333333333,
+        "mae": 94.8743,
+        "wape": 14.814133333333332,
+        "peak_mae": 122.2897,
+        "r2": 0.959,
+        "pearson_r": 0.9798666666666667
+      },
+      "best_params": {
+        "hidden_dim1": 128,
+        "hidden_dim2": 64,
+        "dropout_rate": 0.1,
+        "lr": 0.0035067764992972213,
+        "epochs": 7
+      },
+      "avg_fit_sec": 17.73903250694275,
+      "avg_pred_sec": 1.2360728581746419,
+      "improvements": {
+        "rmse_diff": -34.01733333333334,
+        "rmse_impr_pct": 16.835974464591864,
+        "mae_diff": -26.052566666666678,
+        "mae_impr_pct": 21.54406823297608
+      },
+      "elapsed_seconds": 720.9740810394287
+    }
+  },
+  "all": {
+    "group_name": "all",
+    "label": "Set 4: + 기상 및 행사 전체 (25종)",
+    "feature_count": 25,
+    "lgb": {
+      "model_name": "LightGBM",
+      "baseline_metrics": {
+        "rmse": 186.89106666666666,
+        "mae": 97.6494,
+        "wape": 15.247300000000001,
+        "peak_mae": 145.91963333333334,
+        "r2": 0.9493,
+        "pearson_r": 0.9751
+      },
+      "best_metrics": {
+        "rmse": 141.94136666666665,
+        "mae": 69.22816666666667,
+        "wape": 10.8095,
+        "peak_mae": 96.98386666666666,
+        "r2": 0.9707666666666667,
+        "pearson_r": 0.9855
+      },
+      "best_params": {
+        "n_estimators": 160,
+        "learning_rate": 0.12675777813521233,
+        "num_leaves": 84,
+        "max_depth": 10,
+        "min_child_samples": 40,
+        "subsample": 0.7593192884317849,
+        "colsample_bytree": 0.6986857927103056,
+        "reg_alpha": 0.21279241838941618,
+        "reg_lambda": 0.2299078256587199
+      },
+      "avg_fit_sec": 2.4376668135325112,
+      "avg_pred_sec": 0.8265902201334635,
+      "improvements": {
+        "rmse_diff": -44.94970000000001,
+        "rmse_impr_pct": 24.051283350087008,
+        "mae_diff": -28.421233333333333,
+        "mae_impr_pct": 29.105384501423803
+      },
+      "elapsed_seconds": 171.72405338287354
+    },
+    "rf": {
+      "model_name": "Random Forest",
+      "baseline_metrics": {
+        "rmse": 189.42,
+        "mae": 89.68606666666666,
+        "wape": 14.003766666666666,
+        "peak_mae": 140.50236666666666,
+        "r2": 0.9479333333333333,
+        "pearson_r": 0.9739
+      },
+      "best_metrics": {
+        "rmse": 130.40296666666666,
+        "mae": 55.65136666666666,
+        "wape": 8.6896,
+        "peak_mae": 72.9641,
+        "r2": 0.9753,
+        "pearson_r": 0.9877333333333334
+      },
+      "best_params": {
+        "n_estimators": 75,
+        "max_depth": 16,
+        "min_samples_split": 8,
+        "min_samples_leaf": 3,
+        "max_samples": 0.3
+      },
+      "avg_fit_sec": 17.188352187474568,
+      "avg_pred_sec": 0.5778331756591797,
+      "improvements": {
+        "rmse_diff": -59.01703333333333,
+        "rmse_impr_pct": 31.15670643719424,
+        "mae_diff": -34.0347,
+        "mae_impr_pct": 37.94870403503778
+      },
+      "elapsed_seconds": 556.9829730987549
+    },
+    "lstm": {
+      "model_name": "MetroLSTM",
+      "baseline_metrics": {
+        "rmse": 226.27036666666666,
+        "mae": 164.32103333333333,
+        "wape": 25.657799999999998,
+        "peak_mae": 182.96479999999997,
+        "r2": 0.9257,
+        "pearson_r": 0.9702999999999999
+      },
+      "best_metrics": {
+        "rmse": 171.21793333333335,
+        "mae": 94.68813333333333,
+        "wape": 14.7855,
+        "peak_mae": 124.97826666666667,
+        "r2": 0.9574333333333334,
+        "pearson_r": 0.9790333333333333
+      },
+      "best_params": {
+        "hidden_dim1": 128,
+        "hidden_dim2": 64,
+        "dropout_rate": 0.1,
+        "lr": 0.0035067764992972213,
+        "epochs": 7
+      },
+      "avg_fit_sec": 15.348180373509726,
+      "avg_pred_sec": 1.2069363594055176,
+      "improvements": {
+        "rmse_diff": -55.05243333333331,
+        "rmse_impr_pct": 24.33037703714626,
+        "mae_diff": -69.6329,
+        "mae_impr_pct": 42.376133223764626
+      },
+      "elapsed_seconds": 699.2685866355896
+    }
+  }
+}
