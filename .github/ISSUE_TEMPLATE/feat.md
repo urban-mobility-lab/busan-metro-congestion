@@ -11,7 +11,7 @@ assignees: ""
 
 ## 분류 (라벨 지정)
 - 트랙: `track:main` (운영 배치) / `track:research` (논문 실험·튜닝)
-- 영역: `area:preprocess` / `area:modeling` / `area:data` / `area:ci` / `area:docs`
+- 영역: `area:preprocess` / `area:modeling` / `area:data` / `area:api` / `area:ui` / `area:ops` / `area:ci` / `area:docs`
 
 ## 구현 범위 및 변경 예정 파일
 - [ ] 주요 모듈/스크립트:
