@@ -32,7 +32,7 @@
   * `docs/<문서명>`: 문서 추가 및 수정 (예: `docs/readme-update`)
   * `refactor/<대상>`: 기능 변경 없는 코드 구조 개선 (예: `refactor/import-cleanup`)
 * 브랜치 수명 주기 (Lifecycle):
-  0. **이슈 등록 (Issue)**: 작업 단위마다 `.github/ISSUE_TEMPLATE/`(`feat.md`, `fix.md`, `docs_chore.md`) 템플릿으로 GitHub Issue를 먼저 등록하고 트랙 라벨(`track:main` / `track:research`)과 영역 라벨(`area:preprocess`, `area:modeling`, `area:data`, `area:ci`, `area:docs`)을 지정합니다. 1개 이슈는 1개 브랜치·1개 PR에 대응합니다.
+  0. **이슈 등록 (Issue)**: 작업 단위마다 `.github/ISSUE_TEMPLATE/`(`feat.md`, `fix.md`, `docs_chore.md`) 템플릿으로 GitHub Issue를 먼저 등록하고 트랙 라벨(`track:main` / `track:research`)과 영역 라벨(`area:preprocess`, `area:modeling`, `area:data`, `area:api`, `area:ui`, `area:ops`, `area:ci`, `area:docs`)을 지정합니다. 1개 이슈는 1개 브랜치·1개 PR에 대응합니다.
   1. **분기 (Creation)**: 최신 `main` 브랜치에서 분기합니다 (`git checkout -b <브랜치명>`).
   2. **로컬 개발 및 검증 (Development & Local Gate)**: 작업 중 변경 사항에 대해 로컬 린트 및 포맷 검증(`uv run ruff check .`, `uv run ruff format --check .`)을 반드시 통과합니다 (단위 테스트가 작성된 경우 `uv run pytest tests/ -v` 포함).
   3. **원격 푸시 및 CI (Push & CI Gate)**: 원격 저장소에 푸시하여 GitHub Actions CI 자동 검사를 통과합니다.
