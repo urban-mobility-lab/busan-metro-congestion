@@ -32,11 +32,11 @@
   * `docs/<문서명>`: 문서 추가 및 수정 (예: `docs/readme-update`)
   * `refactor/<대상>`: 기능 변경 없는 코드 구조 개선 (예: `refactor/import-cleanup`)
 * 브랜치 수명 주기 (Lifecycle):
-  0. **이슈 등록 (Issue)**: 작업 단위마다 GitHub Issue를 먼저 등록하고 트랙 라벨(`track:main` / `track:research`)과 영역 라벨(`area:preprocess`, `area:modeling`, `area:data`, `area:ci`, `area:docs`)을 지정합니다. 1개 이슈는 1개 브랜치·1개 PR에 대응합니다.
+  0. **이슈 등록 (Issue)**: 작업 단위마다 `.github/ISSUE_TEMPLATE/`(`feat.md`, `fix.md`, `docs_chore.md`) 템플릿으로 GitHub Issue를 먼저 등록하고 트랙 라벨(`track:main` / `track:research`)과 영역 라벨(`area:preprocess`, `area:modeling`, `area:data`, `area:ci`, `area:docs`)을 지정합니다. 1개 이슈는 1개 브랜치·1개 PR에 대응합니다.
   1. **분기 (Creation)**: 최신 `main` 브랜치에서 분기합니다 (`git checkout -b <브랜치명>`).
   2. **로컬 개발 및 검증 (Development & Local Gate)**: 작업 중 변경 사항에 대해 로컬 린트 및 포맷 검증(`uv run ruff check .`, `uv run ruff format --check .`)을 반드시 통과합니다 (단위 테스트가 작성된 경우 `uv run pytest tests/ -v` 포함).
   3. **원격 푸시 및 CI (Push & CI Gate)**: 원격 저장소에 푸시하여 GitHub Actions CI 자동 검사를 통과합니다.
-  4. **PR 생성 및 리뷰 (Pull Request)**: `main`을 대상으로 PR을 생성하고 코드 변경 사항을 검토합니다. PR 본문에 `Closes #<이슈 번호>`를 적어 병합 시 이슈가 자동으로 닫히게 합니다.
+  4. **PR 생성 및 리뷰 (Pull Request)**: `.github/pull_request_template.md` 체크리스트에 따라 `main`을 대상으로 PR을 생성하고 코드 변경 사항을 검토합니다. PR 본문에 `Closes #<이슈 번호>`를 적어 병합 시 이슈가 자동으로 닫히게 합니다.
   5. **병합 및 종료 (Squash & Merge & Deletion)**: PR 승인 시 1개의 원자적 커밋으로 Squash & Merge를 수행하며, 병합 완료 즉시 작업 브랜치는 원격과 로컬에서 삭제하여 브랜치 목록을 청결하게 유지합니다.
 * 테스트 코드 원칙:
   * 모듈별 단위 테스트는 해당 기능 구현 브랜치(`feat/<기능명>`)에서 기능 코드와 함께 작성합니다. 미구현 상태의 빈 테스트를 `main` 브랜치에 미리 커밋하여 스킵 처리하지 않습니다.
@@ -116,6 +116,6 @@ CI(`.github/workflows/ci.yml`)는 `lint` 잡(`Lint & Format (Ruff)`: `ruff forma
 2. CI 실패 시, 테스트 로그를 확인하여 오류를 수정한 후 재푸시해야 합니다.
 
 ### 4.3 병합 전략 (Merge Strategy)
-* Squash & Merge:
-  * PR의 작업 커밋들을 1개의 원자적(Atomic) 커밋으로 압축하여 `main` 브랜치에 병합합니다.
-  * 메인 브랜치의 Git 히스토리를 간결하게 유지합니다.
+* Squash & Merge 전용:
+  * 저장소 설정으로 Squash & Merge만 허용하며, PR의 작업 커밋들을 1개의 원자적(Atomic) 커밋으로 압축해 `main` 브랜치에 병합합니다.
+  * 머지 완료 시 원격 작업 브랜치는 자동 삭제되며, `main` 브랜치의 force push 및 삭제는 보호 규칙으로 차단됩니다.
