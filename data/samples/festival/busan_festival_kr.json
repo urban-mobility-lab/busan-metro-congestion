@@ -1,0 +1,79 @@
+{
+  "getFestivalKr": {
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "NORMAL_CODE"
+    },
+    "item": [
+      {
+        "UC_SEQ": 1001,
+        "MAIN_TITLE": "해운대모래축제(한,영,중간,중번,일)",
+        "GUGUN_NM": "해운대구",
+        "LAT": 35.1587,
+        "LNG": 129.1604,
+        "PLACE": "해운대해수욕장",
+        "TITLE": "",
+        "SUBTITLE": "",
+        "MAIN_PLACE": "해운대해수욕장",
+        "ADDR1": "부산광역시 해운대구 우동",
+        "ADDR2": "",
+        "CNTCT_TEL": "",
+        "HOMEPAGE_URL": "",
+        "TRFC_INFO": "도시철도 2호선 해운대역",
+        "USAGE_DAY": "",
+        "USAGE_DAY_WEEK_AND_TIME": "2025. 5. 16. ~ 5. 19.",
+        "USAGE_AMOUNT": "",
+        "MAIN_IMG_NORMAL": "",
+        "MAIN_IMG_THUMB": "",
+        "ITEMCNTNTS": "",
+        "MIDDLE_SIZE_RM1": ""
+      },
+      {
+        "UC_SEQ": 1002,
+        "MAIN_TITLE": "부산자갈치축제(한,영)",
+        "GUGUN_NM": "중구",
+        "LAT": 35.0966,
+        "LNG": 129.0306,
+        "PLACE": "자갈치시장 일원",
+        "TITLE": "",
+        "SUBTITLE": "",
+        "MAIN_PLACE": "자갈치시장",
+        "ADDR1": "부산광역시 중구 남포동",
+        "ADDR2": "",
+        "CNTCT_TEL": "",
+        "HOMEPAGE_URL": "",
+        "TRFC_INFO": "도시철도 1호선 자갈치역 남포역",
+        "USAGE_DAY": "",
+        "USAGE_DAY_WEEK_AND_TIME": "2025. 10. 23. ~ 10. 06.",
+        "USAGE_AMOUNT": "",
+        "MAIN_IMG_NORMAL": "",
+        "MAIN_IMG_THUMB": "",
+        "ITEMCNTNTS": "",
+        "MIDDLE_SIZE_RM1": ""
+      },
+      {
+        "UC_SEQ": 1003,
+        "MAIN_TITLE": "부산불꽃축제(한, 영)",
+        "GUGUN_NM": "수영구",
+        "LAT": 35.1532,
+        "LNG": 129.1186,
+        "PLACE": "광안리해수욕장",
+        "TITLE": "",
+        "SUBTITLE": "",
+        "MAIN_PLACE": "광안리해수욕장",
+        "ADDR1": "부산광역시 수영구 광안해변로",
+        "ADDR2": "",
+        "CNTCT_TEL": "",
+        "HOMEPAGE_URL": "",
+        "TRFC_INFO": "도시철도 2호선 광안역 금련산역",
+        "USAGE_DAY": "",
+        "USAGE_DAY_WEEK_AND_TIME": "매년 11월",
+        "USAGE_AMOUNT": "",
+        "MAIN_IMG_NORMAL": "",
+        "MAIN_IMG_THUMB": "",
+        "ITEMCNTNTS": "",
+        "MIDDLE_SIZE_RM1": ""
+      }
+    ]
+  }
+}
