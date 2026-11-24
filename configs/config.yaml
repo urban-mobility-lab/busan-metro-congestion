@@ -1,0 +1,28 @@
+# 부산 지하철 혼잡도 예측 플랫폼 표준 설정 파일 (configs/config.yaml)
+project:
+  name: busan-metro-congestion
+  seed: 42
+  version: "0.1.0"
+
+pipeline:
+  horizon: short
+  step: all
+
+model:
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    n_jobs: -1
+  lightgbm:
+    n_estimators: 100
+    learning_rate: 0.05
+    num_leaves: 31
+    n_jobs: -1
+  lstm:
+    hidden_dim1: 64
+    hidden_dim2: 32
+    dense_dim: 16
+    dropout_rate: 0.2
+    epochs: 15
+    batch_size: 64
+    lr: 0.001

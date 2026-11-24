@@ -1,0 +1,80 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+*.so
+
+# Distribution / packaging (Modern uv / setuptools)
+.Python
+build/
+dist/
+wheels/
+*.egg-info/
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment Variables
+.env
+.env.local
+*.env
+!*.env.template
+!*.env.example
+
+# Testing & Coverage & Linter caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.hypothesis/
+
+# Jupyter & IDEs
+.ipynb_checkpoints
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# AI Agent Scratchpad
+scratch/*
+!scratch/.gitkeep
+
+# Data lifecycle isolation (대용량 및 생성 데이터)
+data/raw/**
+!data/raw/**/
+data/interim/**
+!data/interim/**/
+data/features/**
+!data/features/**/
+data/processed/**
+!data/processed/**/
+*.parquet
+*.csv
+
+!**/.gitkeep
+!data/samples/**
+!data/reference/**
+
+# Model Weights & Artifacts (학습 가중치 및 체크포인트)
+artifacts/**/checkpoints/**
+artifacts/**/*.pt
+artifacts/**/*.pth
+artifacts/**/*.bin
+artifacts/**/*.joblib
+artifacts/**/*.onnx
+!artifacts/**/.gitkeep
+!artifacts/**/metrics.json
+weights/
+
+# Logs & OS artifacts
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini

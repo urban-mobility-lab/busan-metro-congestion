@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: busan_metro_gpu_trainer
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # 호스트 데이터, 아티팩트 및 설정 저장소 볼륨 마운트
+      - ../data:/app/data
+      - ../artifacts:/app/artifacts
+      - ../configs:/app/configs
+      - ../scratch:/app/scratch
+      - ../scripts:/app/scripts
+      - ../busan_metro_congestion:/app/busan_metro_congestion
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: busan-metro

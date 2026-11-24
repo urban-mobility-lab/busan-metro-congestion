@@ -1,0 +1,65 @@
+[project]
+name = "busan-metro-congestion"
+version = "0.1.0"
+description = "외부 요인(기상, 축제, 공휴일)을 반영한 부산 지하철 혼잡도 예측 플랫폼"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "polars>=1.15.0",
+    "pyarrow>=16.0.0",
+    "torch>=2.2.0",
+    "lightgbm>=4.3.0",
+    "scikit-learn>=1.4.0",
+    "pyyaml>=6.0.1",
+    "requests>=2.32.0",
+    "python-dotenv>=1.0.1",
+    "numpy>=1.26.0",
+    "optuna>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.5.0",
+]
+
+[project.scripts]
+busan-metro = "busan_metro_congestion.run_pipeline:cli_main"
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["busan_metro_congestion*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "F",      # Pyflakes (미사용 변수, 잘못된 import 등 치명적 버그 방지)
+    "E", "W", # Pycodestyle 에러/경고
+    "I",      # isort (import 순서 정리)
+]
+ignore = [
+    "E501",   # Line too long (줄 길이 무시)
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+]

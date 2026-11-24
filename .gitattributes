@@ -1,0 +1,19 @@
+# 텍스트 파일은 저장소와 작업 트리 모두 LF로 통일 (OS별 core.autocrlf 설정과 무관)
+* text=auto eol=lf
+
+# 원천 스키마 보존: 데이터 파일은 인코딩(CP949/UTF-8 BOM)과 CRLF를 바이트 그대로 유지
+data/** -text
+
+# 바이너리 산출물 및 문서
+*.parquet binary
+*.joblib binary
+*.pt binary
+*.pth binary
+*.onnx binary
+*.db binary
+*.npy binary
+*.docx binary
+*.xlsx binary
+*.xls binary
+*.png binary
+*.jpg binary

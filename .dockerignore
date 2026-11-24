@@ -1,0 +1,17 @@
+.git
+.venv
+venv
+.pytest_cache
+.ruff_cache
+__pycache__
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+scratch/
+artifacts/
+data/raw/
+data/interim/
+data/features/
+data/processed/
