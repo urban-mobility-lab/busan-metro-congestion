@@ -76,6 +76,7 @@ busan-metro-congestion/
 │   └── docker-compose.yml         # GPU 자원 할당 및 볼륨 마운트 정의
 │
 ├── docs/                          # 프로젝트 문서 및 연구 자료
+│   ├── API_SPEC.md                # 사전 추론 예측 결과 조회 REST API 명세
 │   └── DIRECTORY_STRUCTURE.md     # 본 문서 (디렉터리 및 모듈 명세)
 │
 ├── scripts/                       # 데이터 수집, 마스터 빌더 및 2-Track 롤링 평가 CLI 스크립트
