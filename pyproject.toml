@@ -23,6 +23,14 @@ dev = [
     "ruff>=0.5.0",
 ]
 
+[dependency-groups]
+cu124 = [
+    "torch>=2.2.0",
+]
+cpu = [
+    "torch>=2.2.0",
+]
+
 [project.scripts]
 busan-metro = "busan_metro_congestion.run_pipeline:cli_main"
 
@@ -54,12 +62,27 @@ addopts = "-ra -q"
 testpaths = ["tests"]
 pythonpath = ["."]
 
+[tool.uv]
+default-groups = ["cu124"]
+conflicts = [
+    [
+        { group = "cu124" },
+        { group = "cpu" },
+    ],
+]
+
 [[tool.uv.index]]
 name = "pytorch-cu124"
 url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+    { index = "pytorch-cu124", group = "cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" },
+    { index = "pytorch-cpu", group = "cpu", marker = "sys_platform == 'linux'" },
 ]
