@@ -5,7 +5,6 @@ project:
   version: "0.1.0"
 
 pipeline:
-  horizon: short
   step: all
 
 model:

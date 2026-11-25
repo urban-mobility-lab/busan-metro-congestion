@@ -332,13 +332,15 @@ def build_subway_processed(
     interim_path: Path | str | None = None,
     output_path: Path | str | None = None,
     raw_dir: Path | str | None = None,
-    start_date: str = "2023-06-01",
-    end_date: str = "2026-08-31",
+    start_date: str | None = "2023-06-01",
+    end_date: str | None = "2026-08-31",
     station_master_path: Path | str | None = None,
+    force_rebuild: bool = False,
 ) -> pl.DataFrame:
     """
     [2단계: interim -> processed]
-    subway_interim.parquet를 로드(부재 시 자동 빌드)하여 기간 필터링(기본: 2023.06~2026.08),
+    subway_interim.parquet를 로드(부재 또는 force_rebuild=True 시 자동 빌드)하여
+    기간 필터링(start_date/end_date가 None이면 해당 경계 미제한),
     station_master.parquet 조인(114개 역사 매핑) 및 통행량(accumulated_passengers)을 산출하여
     data/processed/subway_processed.parquet에 저장합니다.
 
@@ -351,8 +353,10 @@ def build_subway_processed(
     else:
         interim_file = Path(interim_path)
 
-    if not interim_file.exists():
-        logger.info(f"interim 파일이 존재하지 않아 자동 생성합니다: {interim_file}")
+    if force_rebuild or not interim_file.exists():
+        logger.info(
+            f"interim 파일을 원시 데이터에서 빌드합니다: {interim_file} (force_rebuild={force_rebuild})"
+        )
         interim_df = build_subway_interim(raw_dir=raw_dir, output_path=interim_file)
     else:
         interim_df = pl.read_parquet(interim_file)
@@ -362,14 +366,17 @@ def build_subway_processed(
     else:
         output_file = Path(output_path)
 
-    s_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-    e_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-
-    # 1. 기간 필터링
-    filtered = interim_df.filter((pl.col("date") >= s_dt) & (pl.col("date") <= e_dt))
+    # 1. 기간 필터링 (start_date / end_date가 None이면 해당 경계 무제한)
+    filtered = interim_df
+    if start_date is not None:
+        s_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
+        filtered = filtered.filter(pl.col("date") >= s_dt)
+    if end_date is not None:
+        e_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
+        filtered = filtered.filter(pl.col("date") <= e_dt)
     if len(filtered) == 0:
         raise ValueError(
-            f"지정된 기간({start_date} ~ {end_date})에 해당하는 데이터가 없습니다."
+            f"지정된 기간({start_date or '*'} ~ {end_date or '*'})에 해당하는 데이터가 없습니다."
         )
 
     # 2. 역사 마스터 조인 (114개 역)
