@@ -39,13 +39,21 @@ busan-metro-congestion/
 │   │   ├── festival.py            # 부산 축제 정보 1.5km 반경 공간 매핑
 │   │   └── features.py            # 데이터 결합, Cyclical/Target 인코딩 및 최종 Parquet 출력
 │   │
-│   └── modeling/                  # 머신러닝/딥러닝 모델링, 평가 및 배치 추론 모듈
+│   ├── modeling/                  # 머신러닝/딥러닝 모델링, 평가 및 배치 추론 모듈
+│   │   ├── __init__.py
+│   │   ├── baseline.py            # Fast Track: Random Forest / LightGBM 회귀 모델 학습
+│   │   ├── lstm_net.py            # Accurate Track: PyTorch 시계열 LSTM 네트워크 및 Dataset
+│   │   ├── ensemble.py            # Two-Track 가중치 블렌딩 앙상블 (RF + LGBM + LSTM)
+│   │   ├── metrics.py             # 논문 평가 지표 함수 (MAE, RMSE, R², Pearson r, WAPE, Peak MAE)
+│   │   └── predict.py             # Set 1(13종) 운영 배치 추론, 산출물 스키마 검증 및 원자적 저장
+│   │
+│   └── api/                       # 사전 추론 예측 결과 조회 REST API (FastAPI, /api/v1)
 │       ├── __init__.py
-│       ├── baseline.py            # Fast Track: Random Forest / LightGBM 회귀 모델 학습
-│       ├── lstm_net.py            # Accurate Track: PyTorch 시계열 LSTM 네트워크 및 Dataset
-│       ├── ensemble.py            # Two-Track 가중치 블렌딩 앙상블 (RF + LGBM + LSTM)
-│       ├── metrics.py             # 논문 평가 지표 함수 (MAE, RMSE, R², Pearson r, WAPE, Peak MAE)
-│       └── predict.py             # Set 1(13종) 운영 배치 추론, 산출물 스키마 검증 및 원자적 저장
+│       ├── app.py                 # create_app() 앱 팩토리 및 라우트 정의
+│       ├── predictions.py         # predictions.parquet 로드·스키마 검증·조회 (mtime 기반 재로드)
+│       ├── stations.py            # station_master.parquet 기반 역 목록
+│       ├── schemas.py             # 요청/응답 스키마
+│       └── errors.py              # {"code", "message"} 오류 응답 처리
 │
 ├── tests/                         # 단위 및 통합 테스트 슈트
 │
@@ -76,6 +84,7 @@ busan-metro-congestion/
 │   └── docker-compose.yml         # GPU 자원 할당 및 볼륨 마운트 정의
 │
 ├── docs/                          # 프로젝트 문서 및 연구 자료
+│   ├── API_SPEC.md                # 사전 추론 예측 결과 조회 REST API 명세
 │   └── DIRECTORY_STRUCTURE.md     # 본 문서 (디렉터리 및 모듈 명세)
 │
 ├── scripts/                       # 데이터 수집, 마스터 빌더 및 2-Track 롤링 평가 CLI 스크립트

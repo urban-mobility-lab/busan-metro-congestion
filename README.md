@@ -92,5 +92,6 @@ docker compose -f docker/docker-compose.yml up --build
 ## 3. 프로젝트 문서 링크
 
 * [DIRECTORY_STRUCTURE.md](./docs/DIRECTORY_STRUCTURE.md): 디렉터리 구조 및 모듈 매핑 명세
+* [API_SPEC.md](./docs/API_SPEC.md): 사전 추론 예측 결과 조회 REST API 명세
 * [CONTRIBUTING.md](./CONTRIBUTING.md): 협업 브랜치 전략, 커밋 컨벤션, PR 규칙
 * [AGENTS.md](./AGENTS.md): AI 에이전트를 위한 개발 가이드라인
