@@ -11,6 +11,7 @@ from busan_metro_congestion.config import SAMPLES_DIR
 from busan_metro_congestion.preprocess import features as features_module
 from busan_metro_congestion.preprocess.features import (
     MASTER_FEATURE_COLUMNS,
+    OPERATIONAL_MASTER_COLUMNS,
     run_feature_pipeline,
 )
 from busan_metro_congestion.preprocess.festival import (
@@ -274,3 +275,72 @@ def test_run_feature_pipeline_auto_build_invokes_processed_builders(
     assert "subway" in called
     assert called["weather"] == {"track": "forecast", "save_output": True}
     assert called["festival"] is True
+
+
+def test_run_feature_pipeline_operational_mode_excludes_external_and_strict_calendar(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    sample_pipeline_inputs: dict[str, Path],
+):
+    """
+    include_external=False(Set 1 운영 모드)에서:
+    1) 기상·축제·격자 의존성 없이 OPERATIONAL_MASTER_COLUMNS(17컬럼)와 기본 파일명을 생성하고,
+    2) subway_path 미지정 시 build_subway_processed(start_date=None, end_date=None, force_rebuild=True)를 호출하며,
+    3) calendar_master에 없는 날짜가 포함되면 임의 대치 없이 ValueError로 명시 실패하는지 검증합니다.
+    """
+    fake_features_dir = tmp_path / "features"
+    fake_processed_dir = tmp_path / "processed"
+    fake_processed_dir.mkdir(parents=True)
+    monkeypatch.setattr(features_module, "FEATURES_DATA_DIR", fake_features_dir)
+    monkeypatch.setattr(features_module, "PROCESSED_DATA_DIR", fake_processed_dir)
+
+    captured_subway_kwargs: dict[str, object] = {}
+
+    def fake_build_subway_processed(**kwargs: object) -> pl.DataFrame:
+        captured_subway_kwargs.update(kwargs)
+        return process_subway_data(file_path=sample_pipeline_inputs["subway_path"])
+
+    def forbid_external(*args: object, **kwargs: object) -> pl.DataFrame:
+        raise AssertionError(
+            "include_external=False에서 외부 전처리기가 호출되었습니다."
+        )
+
+    monkeypatch.setattr(
+        features_module, "build_subway_processed", fake_build_subway_processed
+    )
+    monkeypatch.setattr(features_module, "process_weather_data", forbid_external)
+    monkeypatch.setattr(features_module, "build_festival_processed", forbid_external)
+
+    df_op = run_feature_pipeline(force_reload=True, include_external=False)
+    default_out = fake_features_dir / "metro_features_operational.parquet"
+    assert default_out.exists()
+    assert df_op.columns == OPERATIONAL_MASTER_COLUMNS
+    assert len(df_op) == 240
+    assert df_op.equals(df_op.sort(["station_id", "datetime"]))
+    for col in OPERATIONAL_MASTER_COLUMNS:
+        assert df_op[col].null_count() == 0
+    assert captured_subway_kwargs["start_date"] is None
+    assert captured_subway_kwargs["end_date"] is None
+    assert captured_subway_kwargs["force_rebuild"] is True
+
+    # calendar_master에 수록되지 않은 날짜가 포함된 지하철 데이터 -> 임의 대치 금지(ValueError)
+    from datetime import date, datetime
+
+    future_sub = (
+        process_subway_data(file_path=sample_pipeline_inputs["subway_path"])
+        .head(24)
+        .with_columns(
+            pl.lit(date(2099, 1, 1)).alias("date"),
+            pl.lit(datetime(2099, 1, 1, 8, 0)).alias("datetime"),
+        )
+    )
+    future_sub_path = tmp_path / "subway_2099.parquet"
+    future_sub.write_parquet(future_sub_path)
+
+    with pytest.raises(ValueError, match="달력 마스터에 수록되지 않은 날짜가 1일"):
+        run_feature_pipeline(
+            subway_path=future_sub_path,
+            output_path=tmp_path / "should_not_exist.parquet",
+            force_reload=True,
+            include_external=False,
+        )

@@ -18,5 +18,6 @@
 - `data/samples/calendar/`: 한국천문연구원 특일 정보(`getRestDeInfo`) JSON 스키마 호환 샘플 (선거일·임시공휴일·중복 날짜·비공휴일 필터링 케이스 포함)
 - `data/samples/features/`: 통합 마스터 피처 테이블 스키마 검증용 미니 샘플 Parquet
 - `data/samples/festival/`: 축제 및 전시 전처리 파서 내구성 테스트용 미니 샘플 (정상 케이스, 위경도 반전 엣지 케이스, 비정형 일자 파싱 케이스, 타 지역 필터링 케이스 등 포함)
+- `data/samples/predictions/`: Set 1 배치 추론 산출물 스키마(9컬럼) 호환 미니 샘플 Parquet (1~4호선 대표 역사 4개 × 평일/주말 2일 × 24시간 = 192행, 조회 API 병렬 개발·오프라인 검증용)
 - `data/samples/subway/`: 지하철 승하차 시간대별 전처리 테스트용 슬라이스 샘플
 - `data/samples/weather/`: 기상청 단기예보 시계열 전처리 테스트용 슬라이스 샘플

@@ -46,6 +46,9 @@ CALENDAR_TEMPORAL_FEATURES = [
     "weekday_cos",
 ]
 
+# Set 1 운영 표준 피처: 지하철 식별/기저(3) + 달력/주기(10) = 13종 (기상·축제 배제)
+OPERATIONAL_FEATURES = SUBWAY_BASE_FEATURES + CALENDAR_TEMPORAL_FEATURES
+
 # 공통 기본 피처: 식별/기저(3) + 축제(4) + 달력/주기(10) = 17종
 BASE_HORIZON_FEATURES = (
     SUBWAY_BASE_FEATURES + FESTIVAL_FEATURES + CALENDAR_TEMPORAL_FEATURES
@@ -196,14 +199,16 @@ ROLLING_SPLIT_TRACKS, HOLDOUT_TEST_PERIOD = generate_rolling_tracks(
 
 
 def get_feature_columns(horizon: str = "short") -> list[str]:
-    """호라이즌 트랙('short' 또는 'long')에 따른 피처 컬럼 목록을 반환합니다."""
+    """호라이즌/피처 트랙('short', 'long', 'operational')에 따른 피처 컬럼 목록을 반환합니다."""
     if horizon == "short":
         return list(SHORT_HORIZON_FEATURES)
     elif horizon == "long":
         return list(LONG_HORIZON_FEATURES)
+    elif horizon == "operational":
+        return list(OPERATIONAL_FEATURES)
     else:
         raise ValueError(
-            f"지원하지 않는 예측 호라이즌입니다: '{horizon}'. ('short', 'long' 중 선택)"
+            f"지원하지 않는 예측 호라이즌입니다: '{horizon}'. ('short', 'long', 'operational' 중 선택)"
         )
 
 

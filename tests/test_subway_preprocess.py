@@ -423,3 +423,93 @@ def test_build_subway_interim_missing_raw_raises(tmp_path: Path) -> None:
             raw_dir=empty_dir,
             output_path=tmp_path / "subway_interim.parquet",
         )
+
+
+def test_build_subway_processed_unbounded_dates_and_force_rebuild(
+    tmp_path: Path,
+) -> None:
+    """
+    build_subway_processed의 start_date/end_date=None 무제한 경계,
+    force_rebuild=False 캐시 재사용 vs force_rebuild=True 강제 재빌드,
+    그리고 빈 필터 결과 ValueError를 검증합니다.
+    """
+    from datetime import date
+
+    raw_dir = tmp_path / "raw_subway"
+    raw_dir.mkdir()
+    src_df = pl.read_csv(
+        SUBWAY_SAMPLES_DIR / "subway_2023_sample.csv", encoding="cp949"
+    )
+    first_day = src_df["년월일"].min()
+    template = src_df.filter(pl.col("년월일") == first_day)
+    # 기본 상한(2026-08-31)을 초과하는 날짜(2026-11-15) 포함 원시 Parquet 생성
+    pl.concat(
+        [
+            template.with_columns(pl.lit("2023-06-01").alias("년월일")),
+            template.with_columns(pl.lit("2026-11-15").alias("년월일")),
+        ],
+        how="vertical_relaxed",
+    ).write_parquet(raw_dir / "subway_multi.parquet")
+
+    interim_file = tmp_path / "subway_interim.parquet"
+    processed_file = tmp_path / "subway_processed.parquet"
+
+    # 1. start_date=None, end_date=None -> 2026-08-31 초과 날짜까지 절단 없이 보존
+    df_all = build_subway_processed(
+        interim_path=interim_file,
+        output_path=processed_file,
+        raw_dir=raw_dir,
+        start_date=None,
+        end_date=None,
+    )
+    assert set(df_all["date"].unique().to_list()) == {
+        date(2023, 6, 1),
+        date(2026, 11, 15),
+    }
+
+    # 2. 반개방 경계(start_date만 지정, end_date=None) 검증
+    df_after = build_subway_processed(
+        interim_path=interim_file,
+        output_path=processed_file,
+        raw_dir=raw_dir,
+        start_date="2026-09-01",
+        end_date=None,
+    )
+    assert df_after["date"].unique().to_list() == [date(2026, 11, 15)]
+
+    # 3. stale interim을 2023-06-01 하루치로 축소한 뒤 force_rebuild=False vs True 비교
+    pl.read_parquet(interim_file).filter(
+        pl.col("date") == date(2023, 6, 1)
+    ).write_parquet(interim_file)
+    df_cached = build_subway_processed(
+        interim_path=interim_file,
+        output_path=processed_file,
+        raw_dir=raw_dir,
+        start_date=None,
+        end_date=None,
+        force_rebuild=False,
+    )
+    assert df_cached["date"].unique().to_list() == [date(2023, 6, 1)]
+
+    df_rebuilt = build_subway_processed(
+        interim_path=interim_file,
+        output_path=processed_file,
+        raw_dir=raw_dir,
+        start_date=None,
+        end_date=None,
+        force_rebuild=True,
+    )
+    assert set(df_rebuilt["date"].unique().to_list()) == {
+        date(2023, 6, 1),
+        date(2026, 11, 15),
+    }
+
+    # 4. 지정 기간에 데이터가 0행일 때 ValueError
+    with pytest.raises(ValueError, match="해당하는 데이터가 없습니다"):
+        build_subway_processed(
+            interim_path=interim_file,
+            output_path=processed_file,
+            raw_dir=raw_dir,
+            start_date="2028-01-01",
+            end_date="2028-01-31",
+        )

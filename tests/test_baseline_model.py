@@ -9,6 +9,7 @@ import polars as pl
 import pytest
 
 from busan_metro_congestion.modeling.baseline import (
+    FESTIVAL_FEATURES,
     WEATHER_SHORT_FEATURES,
     SafeRandomForestRegressor,
     calculate_end_date,
@@ -20,6 +21,7 @@ from busan_metro_congestion.modeling.baseline import (
     train_lightgbm,
     train_random_forest,
     validate_date_interval_yearly,
+    validate_short_horizon_lead_time,
 )
 from busan_metro_congestion.modeling.metrics import (
     calculate_mae,
@@ -150,9 +152,10 @@ def test_metrics_calculation():
 
 
 def test_get_feature_columns_tracks():
-    """2-Track 호라이즌 피처 컬럼 분기 및 Weather-Free 여부를 검증합니다."""
+    """호라이즌/트랙별(short, long, operational) 피처 분기 및 Weather/Festival-Free 계약을 검증합니다."""
     short_cols = get_feature_columns("short")
     long_cols = get_feature_columns("long")
+    op_cols = get_feature_columns("operational")
 
     # Short Track에는 기상 8종 포함
     for wf in WEATHER_SHORT_FEATURES:
@@ -162,12 +165,66 @@ def test_get_feature_columns_tracks():
     for wf in WEATHER_SHORT_FEATURES:
         assert wf not in long_cols
 
+    # Operational (Set 1)에는 기상·축제 피처 모두 제외 (13종)
+    assert set(op_cols).isdisjoint(WEATHER_SHORT_FEATURES)
+    assert set(op_cols).isdisjoint(FESTIVAL_FEATURES)
+
     assert len(short_cols) == 25
     assert len(long_cols) == 17
+    assert len(op_cols) == 13
     assert set(short_cols) - set(long_cols) == set(WEATHER_SHORT_FEATURES)
+    assert set(long_cols) - set(op_cols) == set(FESTIVAL_FEATURES)
 
     with pytest.raises(ValueError, match="지원하지 않는 예측 호라이즌입니다"):
         get_feature_columns("ultra_short")
+
+
+def test_validate_short_horizon_lead_time():
+    """연구 파이프라인 단기 모델(short)의 lead_time_hours 경계(0~12), 커스텀 상한, 결측/음수 및 NumPy 경로를 검증합니다."""
+    # 1. 유효 범위 (0~12) 및 lead_time_hours 컬럼 부재 시 정상 통과
+    validate_short_horizon_lead_time(pl.DataFrame({"lead_time_hours": [0, 1, 6, 12]}))
+    validate_short_horizon_lead_time(pl.DataFrame({"station_id": [119, 203]}))
+
+    # 2. 12시간 초과 및 커스텀 max_lead_time 초과 차단
+    with pytest.raises(ValueError, match="최대 12시간 이내의 기상 예보만 허용"):
+        validate_short_horizon_lead_time(pl.DataFrame({"lead_time_hours": [12, 13]}))
+    with pytest.raises(ValueError, match="최대 6시간 이내의 기상 예보만 허용"):
+        validate_short_horizon_lead_time(
+            pl.DataFrame({"lead_time_hours": [6, 7]}), max_lead_time=6
+        )
+
+    # 3. 결측치 차단
+    with pytest.raises(ValueError, match="결측치가 존재합니다"):
+        validate_short_horizon_lead_time(pl.DataFrame({"lead_time_hours": [1, None]}))
+
+    # 4. 음수 차단
+    with pytest.raises(ValueError, match="음수일 수 없습니다"):
+        validate_short_horizon_lead_time(pl.DataFrame({"lead_time_hours": [-1, 3]}))
+
+    # 5. NumPy 배열 경로: 정상 통과, feature_cols 미지정/컬럼 부재 no-op, 초과/NaN/음수 차단
+    feat_cols = ["station_id", "lead_time_hours"]
+    validate_short_horizon_lead_time(
+        np.array([[1.0, 0.0], [2.0, 12.0]], dtype=np.float32),
+        feature_cols=feat_cols,
+    )
+    validate_short_horizon_lead_time(
+        np.array([[1.0, 99.0]], dtype=np.float32), feature_cols=None
+    )
+    validate_short_horizon_lead_time(
+        np.array([[1.0, 99.0]], dtype=np.float32), feature_cols=["station_id", "hour"]
+    )
+    with pytest.raises(ValueError, match="최대 12시간 이내의 기상 예보만 허용"):
+        validate_short_horizon_lead_time(
+            np.array([[1.0, 24.0]], dtype=np.float32), feature_cols=feat_cols
+        )
+    with pytest.raises(ValueError, match="NaN 결측치가 존재합니다"):
+        validate_short_horizon_lead_time(
+            np.array([[1.0, np.nan]], dtype=np.float32), feature_cols=feat_cols
+        )
+    with pytest.raises(ValueError, match="음수일 수 없습니다"):
+        validate_short_horizon_lead_time(
+            np.array([[1.0, -0.5]], dtype=np.float32), feature_cols=feat_cols
+        )
 
 
 def test_split_time_series_leakage_free():

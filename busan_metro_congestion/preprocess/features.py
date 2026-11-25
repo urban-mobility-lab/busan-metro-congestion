@@ -78,6 +78,31 @@ MASTER_FEATURE_COLUMNS = [
 ]
 
 
+OPERATIONAL_MASTER_COLUMNS = [
+    # 식별 및 키
+    "station_id",
+    "line_num",
+    "datetime",
+    "date",
+    "hour",
+    # 타깃
+    "accumulated_passengers",
+    # 역사 기저 피처
+    "station_target_encoded",
+    # 달력 및 시간 주기 피처 (10종)
+    "is_weekend",
+    "is_holiday",
+    "is_holiday_eve",
+    "season",
+    "hour_sin",
+    "hour_cos",
+    "month_sin",
+    "month_cos",
+    "weekday_sin",
+    "weekday_cos",
+]
+
+
 def run_feature_pipeline(
     subway_path: Path | str | None = None,
     weather_path: Path | str | None = None,
@@ -88,34 +113,31 @@ def run_feature_pipeline(
     output_path: Path | str | None = None,
     force_reload: bool = False,
     seed: int = 42,
+    include_external: bool = True,
 ) -> pl.DataFrame:
     """
-    모든 데이터 소스를 통합 결합하여 data/features/metro_features.parquet를 생성합니다.
+    데이터 소스를 통합 결합하여 마스터 피처 Parquet를 생성합니다.
 
-    인자:
-        subway_path: 지하철 전처리 데이터 경로.
-        weather_path: 기상 전처리 데이터 경로.
-        festival_path: 축제 전처리 데이터 경로.
-        calendar_path: 달력 마스터 데이터 경로.
-        station_grid_path: 역사별 기상 격자 매핑 경로.
-        station_master_path: 역사 마스터 데이터 경로.
-        output_path: 최종 저장 경로 (기본값: FEATURES_DATA_DIR / 'metro_features.parquet').
-        force_reload: True이면 기존 캐시 파일 존재 여부와 무관하게 전처리 재생성.
-
-    반환값:
-        정제 및 결측치가 완벽히 보정된 마스터 피처 Polars DataFrame.
+    - include_external=True (기본): 지하철 + 기상 + 축제 + 달력 전체 결합 (31컬럼, metro_features.parquet)
+    - include_external=False (Set 1 운영 모드): 기상·축제·격자 의존성 없이
+      지하철 + 역사 마스터 + 달력 마스터 + 시간 주기성만 결합 (17컬럼, metro_features_operational.parquet)
     """
+    default_filename = (
+        "metro_features.parquet"
+        if include_external
+        else "metro_features_operational.parquet"
+    )
     target_out = (
         Path(output_path)
         if output_path is not None
-        else FEATURES_DATA_DIR / "metro_features.parquet"
+        else FEATURES_DATA_DIR / default_filename
     )
     if not force_reload and target_out.exists():
         logger.info(f"기존 마스터 피처 캐시 파일을 즉시 로드합니다: {target_out}")
         return pl.read_parquet(target_out)
 
     set_seed(seed)
-    logger.info("통합 피처 파이프라인 실행 시작")
+    logger.info(f"통합 피처 파이프라인 실행 시작 (include_external={include_external})")
 
     # -------------------------------------------------------------
     # 1. 공간·시간 앵커 (subway_processed) 준비
@@ -131,7 +153,17 @@ def run_feature_pipeline(
             )
     else:
         processed_sub = PROCESSED_DATA_DIR / "subway_processed.parquet"
-        if processed_sub.exists():
+        if not include_external:
+            if force_reload or not processed_sub.exists():
+                df_subway = build_subway_processed(
+                    start_date=None,
+                    end_date=None,
+                    station_master_path=station_master_path,
+                    force_rebuild=force_reload,
+                )
+            else:
+                df_subway = pl.read_parquet(processed_sub)
+        elif processed_sub.exists():
             df_subway = pl.read_parquet(processed_sub)
         else:
             df_subway = build_subway_processed(station_master_path=station_master_path)
@@ -180,146 +212,152 @@ def run_feature_pipeline(
         )
 
     # -------------------------------------------------------------
-    # 2. 기상 격자 매핑 및 기상 피처 결합
+    # 2~3. 외부 요인(기상·축제) 결합 (include_external=True일 때만 수행)
     # -------------------------------------------------------------
-    if station_grid_path is None:
-        station_grid_path = REFERENCE_DATA_DIR / "station_weather_grid.parquet"
-    df_grid = (
-        pl.read_parquet(station_grid_path)
-        .select(
-            [
-                pl.col("station_id").cast(pl.Int64),
-                pl.col("nx").cast(pl.Int64),
-                pl.col("ny").cast(pl.Int64),
-            ]
+    if include_external:
+        if station_grid_path is None:
+            station_grid_path = REFERENCE_DATA_DIR / "station_weather_grid.parquet"
+        df_grid = (
+            pl.read_parquet(station_grid_path)
+            .select(
+                [
+                    pl.col("station_id").cast(pl.Int64),
+                    pl.col("nx").cast(pl.Int64),
+                    pl.col("ny").cast(pl.Int64),
+                ]
+            )
+            .unique(subset=["station_id"], keep="first")
         )
-        .unique(subset=["station_id"], keep="first")
-    )
 
-    df_subway_grid = df_subway.join(df_grid, on="station_id", how="left")
+        df_subway_grid = df_subway.join(df_grid, on="station_id", how="left")
 
-    # 기상 전처리 데이터 로드
-    df_weather: pl.DataFrame
-    if weather_path is not None:
-        p_w = Path(weather_path)
-        if p_w.suffix == ".parquet":
-            df_weather = pl.read_parquet(p_w)
+        # 기상 전처리 데이터 로드
+        df_weather: pl.DataFrame
+        if weather_path is not None:
+            p_w = Path(weather_path)
+            if p_w.suffix == ".parquet":
+                df_weather = pl.read_parquet(p_w)
+            else:
+                df_weather = process_weather_data(p_w, track="forecast")
         else:
-            df_weather = process_weather_data(p_w, track="forecast")
+            processed_w = PROCESSED_DATA_DIR / "weather_processed.parquet"
+            if processed_w.exists():
+                df_weather = pl.read_parquet(processed_w)
+            else:
+                df_weather = process_weather_data(track="forecast", save_output=True)
+
+        # 기상 데이터 (nx, ny, datetime) 기준 1:1 Left Join (중복 키 방어)
+        weather_cols_to_join = [
+            "nx",
+            "ny",
+            "datetime",
+            "lead_time_hours",
+            "temperature",
+            "humidity",
+            "precipitation",
+            "pop",
+            "rainfall_type",
+            "sky_condition",
+            "wind_speed",
+            "wind_dir_sin",
+            "wind_dir_cos",
+        ]
+        df_weather_sel = df_weather.select(
+            [c for c in weather_cols_to_join if c in df_weather.columns]
+        ).unique(subset=["nx", "ny", "datetime"], keep="first")
+
+        df_with_weather = df_subway_grid.join(
+            df_weather_sel, on=["nx", "ny", "datetime"], how="left"
+        )
+
+        # 기상 결측치 안전 보정 (기상 매칭 범위 밖일 경우 05시/17시 발표 기준 1~12시간 주기 및 시간대 평균 대치)
+        fallback_lead_time = (((pl.col("hour").cast(pl.Int16) - 6) % 12) + 1).cast(
+            pl.Int16
+        )
+        df_with_weather = df_with_weather.with_columns(
+            pl.col("lead_time_hours").fill_null(fallback_lead_time).cast(pl.Int16),
+            pl.col("temperature")
+            .fill_null(pl.col("temperature").mean().over("hour"))
+            .fill_null(15.0)
+            .cast(pl.Float32),
+            pl.col("humidity")
+            .fill_null(pl.col("humidity").mean().over("hour"))
+            .fill_null(60.0)
+            .cast(pl.Float32),
+            pl.col("precipitation").fill_null(0.0).cast(pl.Float32),
+            pl.col("pop").fill_null(0.0).cast(pl.Float32),
+            pl.col("rainfall_type").fill_null(0).cast(pl.Int8),
+            pl.col("sky_condition").fill_null(1).cast(pl.Int8),
+            pl.col("wind_speed")
+            .fill_null(pl.col("wind_speed").mean().over("hour"))
+            .fill_null(2.0)
+            .cast(pl.Float32),
+            pl.col("wind_dir_sin").fill_null(0.0).cast(pl.Float32),
+            pl.col("wind_dir_cos").fill_null(1.0).cast(pl.Float32),
+        )
+
+        # 3. 문화축제·대규모 전시 피처 결합
+        df_festival: pl.DataFrame
+        if festival_path is not None:
+            df_festival = pl.read_parquet(festival_path)
+        else:
+            proc_fest = PROCESSED_DATA_DIR / "festival_processed.parquet"
+            if proc_fest.exists():
+                df_festival = pl.read_parquet(proc_fest)
+            else:
+                try:
+                    df_festival = build_festival_processed(
+                        station_master_path=station_master_path
+                    )
+                except Exception:
+                    logger.warning(
+                        "축제 전처리 파일 생성 불가: 기본 0값 피처로 대체합니다."
+                    )
+                    df_festival = pl.DataFrame(
+                        schema={
+                            "station_id": pl.Int64,
+                            "date": pl.Date,
+                            "nearest_event_rank": pl.Int8,
+                            "max_dist_weight": pl.Float32,
+                            "max_scale_weight": pl.Float32,
+                            "event_impact_score": pl.Float32,
+                        }
+                    )
+
+        fest_join_cols = [
+            "station_id",
+            "date",
+            "nearest_event_rank",
+            "max_dist_weight",
+            "max_scale_weight",
+            "event_impact_score",
+        ]
+        df_fest_sel = df_festival.select(
+            [c for c in fest_join_cols if c in df_festival.columns]
+        ).unique(subset=["station_id", "date"], keep="first")
+
+        df_base_for_cal = df_with_weather.join(
+            df_fest_sel, on=["station_id", "date"], how="left"
+        ).with_columns(
+            pl.col("nearest_event_rank").fill_null(0).cast(pl.Int8),
+            pl.col("max_dist_weight").fill_null(0.0).cast(pl.Float32),
+            pl.col("max_scale_weight").fill_null(0.0).cast(pl.Float32),
+            pl.col("event_impact_score").fill_null(0.0).cast(pl.Float32),
+        )
     else:
-        processed_w = PROCESSED_DATA_DIR / "weather_processed.parquet"
-        if processed_w.exists():
-            df_weather = pl.read_parquet(processed_w)
-        else:
-            df_weather = process_weather_data(track="forecast", save_output=True)
-
-    # 기상 데이터 (nx, ny, datetime) 기준 1:1 Left Join (중복 키 방어)
-    weather_cols_to_join = [
-        "nx",
-        "ny",
-        "datetime",
-        "lead_time_hours",
-        "temperature",
-        "humidity",
-        "precipitation",
-        "pop",
-        "rainfall_type",
-        "sky_condition",
-        "wind_speed",
-        "wind_dir_sin",
-        "wind_dir_cos",
-    ]
-    df_weather_sel = df_weather.select(
-        [c for c in weather_cols_to_join if c in df_weather.columns]
-    ).unique(subset=["nx", "ny", "datetime"], keep="first")
-
-    df_with_weather = df_subway_grid.join(
-        df_weather_sel, on=["nx", "ny", "datetime"], how="left"
-    )
-
-    # 기상 결측치 안전 보정 (기상 매칭 범위 밖일 경우 05시/17시 발표 기준 1~12시간 주기 및 시간대 평균 대치)
-    fallback_lead_time = (((pl.col("hour").cast(pl.Int16) - 6) % 12) + 1).cast(pl.Int16)
-    df_with_weather = df_with_weather.with_columns(
-        pl.col("lead_time_hours").fill_null(fallback_lead_time).cast(pl.Int16),
-        pl.col("temperature")
-        .fill_null(pl.col("temperature").mean().over("hour"))
-        .fill_null(15.0)
-        .cast(pl.Float32),
-        pl.col("humidity")
-        .fill_null(pl.col("humidity").mean().over("hour"))
-        .fill_null(60.0)
-        .cast(pl.Float32),
-        pl.col("precipitation").fill_null(0.0).cast(pl.Float32),
-        pl.col("pop").fill_null(0.0).cast(pl.Float32),
-        pl.col("rainfall_type").fill_null(0).cast(pl.Int8),
-        pl.col("sky_condition").fill_null(1).cast(pl.Int8),
-        pl.col("wind_speed")
-        .fill_null(pl.col("wind_speed").mean().over("hour"))
-        .fill_null(2.0)
-        .cast(pl.Float32),
-        pl.col("wind_dir_sin").fill_null(0.0).cast(pl.Float32),
-        pl.col("wind_dir_cos").fill_null(1.0).cast(pl.Float32),
-    )
-
-    # -------------------------------------------------------------
-    # 3. 문화축제·대규모 전시 피처 결합
-    # -------------------------------------------------------------
-    df_festival: pl.DataFrame
-    if festival_path is not None:
-        df_festival = pl.read_parquet(festival_path)
-    else:
-        proc_fest = PROCESSED_DATA_DIR / "festival_processed.parquet"
-        if proc_fest.exists():
-            df_festival = pl.read_parquet(proc_fest)
-        else:
-            try:
-                df_festival = build_festival_processed(
-                    station_master_path=station_master_path
-                )
-            except Exception:
-                logger.warning(
-                    "축제 전처리 파일 생성 불가: 기본 0값 피처로 대체합니다."
-                )
-                df_festival = pl.DataFrame(
-                    schema={
-                        "station_id": pl.Int64,
-                        "date": pl.Date,
-                        "nearest_event_rank": pl.Int8,
-                        "max_dist_weight": pl.Float32,
-                        "max_scale_weight": pl.Float32,
-                        "event_impact_score": pl.Float32,
-                    }
-                )
-
-    fest_join_cols = [
-        "station_id",
-        "date",
-        "nearest_event_rank",
-        "max_dist_weight",
-        "max_scale_weight",
-        "event_impact_score",
-    ]
-    df_fest_sel = df_festival.select(
-        [c for c in fest_join_cols if c in df_festival.columns]
-    ).unique(subset=["station_id", "date"], keep="first")
-
-    df_with_fest = df_with_weather.join(
-        df_fest_sel, on=["station_id", "date"], how="left"
-    )
-
-    df_with_fest = df_with_fest.with_columns(
-        pl.col("nearest_event_rank").fill_null(0).cast(pl.Int8),
-        pl.col("max_dist_weight").fill_null(0.0).cast(pl.Float32),
-        pl.col("max_scale_weight").fill_null(0.0).cast(pl.Float32),
-        pl.col("event_impact_score").fill_null(0.0).cast(pl.Float32),
-    )
+        df_base_for_cal = df_subway
 
     # -------------------------------------------------------------
     # 4. 대한민국 달력 및 공휴일 마스터 결합
     # -------------------------------------------------------------
     df_cal: pl.DataFrame
     if calendar_path is not None:
-        df_cal = pl.read_parquet(calendar_path)
+        cal_p = Path(calendar_path)
+        if not cal_p.exists():
+            raise FileNotFoundError(
+                f"달력 마스터 참조 파일을 찾을 수 없습니다: {cal_p}"
+            )
+        df_cal = pl.read_parquet(cal_p)
     else:
         cal_master_p = REFERENCE_DATA_DIR / "calendar_master.parquet"
         if not cal_master_p.exists():
@@ -330,7 +368,20 @@ def run_feature_pipeline(
         df_cal = pl.read_parquet(cal_master_p)
 
     df_cal = df_cal.unique(subset=["date"], keep="first")
-    df_with_cal = df_with_fest.join(df_cal, on="date", how="left")
+    df_with_cal = df_base_for_cal.join(df_cal, on="date", how="left")
+
+    if not include_external:
+        missing_cal_dates = df_with_cal.filter(pl.col("season").is_null())[
+            "date"
+        ].unique()
+        if len(missing_cal_dates) > 0:
+            min_m = missing_cal_dates.min()
+            max_m = missing_cal_dates.max()
+            raise ValueError(
+                f"달력 마스터에 수록되지 않은 날짜가 {len(missing_cal_dates)}일 발견되었습니다 "
+                f"({min_m} ~ {max_m}). 'uv run python scripts/sync_operational_data.py --target calendar'로 "
+                "달력 마스터를 최신화하세요."
+            )
 
     df_with_cal = df_with_cal.with_columns(
         pl.col("is_weekend").fill_null(False).cast(pl.Boolean),
@@ -353,7 +404,10 @@ def run_feature_pipeline(
     # -------------------------------------------------------------
     # 6. 최종 스키마 정렬, 무결성 검증 및 저장
     # -------------------------------------------------------------
-    df_result = df_final.select(MASTER_FEATURE_COLUMNS).sort(["station_id", "datetime"])
+    selected_schema_cols = (
+        MASTER_FEATURE_COLUMNS if include_external else OPERATIONAL_MASTER_COLUMNS
+    )
+    df_result = df_final.select(selected_schema_cols).sort(["station_id", "datetime"])
 
     # 무결성 검증: 행 수 보존 및 타깃 결측치 전무 확인
     if len(df_result) != n_expected_rows:
