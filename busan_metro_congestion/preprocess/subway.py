@@ -299,20 +299,29 @@ def build_subway_interim(
 
     csv_files = sorted(raw_dir.glob("*.csv"))
     csv_files = [f for f in csv_files if "역사정보" not in f.name]
+    parquet_files = sorted(raw_dir.glob("*.parquet"))
+    source_files = csv_files + parquet_files
 
-    if not csv_files:
+    if not source_files:
         raise FileNotFoundError(f"경로에 승하차 CSV 파일이 없습니다: {raw_dir}")
 
     dfs: list[pl.DataFrame] = []
-    for f in csv_files:
+    for f in source_files:
         logger.info(f"Interim 변환 중: {f.name}")
-        raw_df = read_subway_csv(f)
+        raw_df = (
+            pl.read_parquet(f) if f.suffix.lower() == ".parquet" else read_subway_csv(f)
+        )
         cleaned_df = clean_subway_data(raw_df)
         dated_df = normalize_subway_date(cleaned_df)
         unpivoted_df = unpivot_subway_data(dated_df)
         dfs.append(unpivoted_df)
 
-    combined = pl.concat(dfs).sort(["datetime", "station_id"])
+    # 파일 간 중복 시 후순위 파일(최신 연도 CSV 또는 API 수집 Parquet) 우선 보존
+    combined = (
+        pl.concat(dfs, how="vertical_relaxed")
+        .unique(subset=["datetime", "station_id"], keep="last", maintain_order=True)
+        .sort(["datetime", "station_id"])
+    )
     output_file.parent.mkdir(parents=True, exist_ok=True)
     combined.write_parquet(output_file)
     logger.info(f"subway_interim 저장 완료: {output_file} (총 {len(combined):,}행)")
