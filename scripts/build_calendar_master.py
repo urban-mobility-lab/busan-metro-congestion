@@ -15,13 +15,23 @@ import argparse
 import json
 import logging
 import math
+import re
+import sys
 from datetime import date
 from pathlib import Path
 from typing import Any
 
 import polars as pl
 
-from busan_metro_congestion.config import RAW_DATA_DIR, REFERENCE_DATA_DIR
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from busan_metro_congestion.config import (  # noqa: E402
+    RAW_DATA_DIR,
+    REFERENCE_DATA_DIR,
+)
+from scripts.ingestion_utils import atomic_write_parquet  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -94,11 +104,43 @@ def load_holidays_from_raw_dir(raw_calendar_dir: Path | str) -> set[date]:
     return holidays
 
 
+def infer_calendar_year_bounds(
+    raw_calendar_dir: Path | str,
+    default_start_year: int = 2016,
+    default_end_year: int = 2026,
+) -> tuple[int, int]:
+    """
+    원천 공휴일 JSON 파일명(holidays_{YYYY}.json)과 내부 공휴일 연도를 스캔하여
+    달력 마스터의 (최소 연도, 최대 연도) 범위를 산출합니다.
+    """
+    raw_dir = Path(raw_calendar_dir)
+    years: list[int] = []
+    if raw_dir.exists():
+        for jf in sorted(raw_dir.glob("*.json")):
+            m = re.search(r"(20\d{2})", jf.stem)
+            if m:
+                years.append(int(m.group(1)))
+            try:
+                payload = json.loads(jf.read_text(encoding="utf-8"))
+                for item in _extract_items_from_payload(payload):
+                    parsed = _parse_locdate(item.get("locdate"))
+                    if parsed is not None:
+                        years.append(parsed.year)
+            except Exception:
+                continue
+
+    if not years:
+        return default_start_year, default_end_year
+
+    return min(default_start_year, min(years)), max(default_end_year, max(years))
+
+
 def build_calendar_master(
     start_date: date = date(2016, 1, 1),
     end_date: date = date(2026, 12, 31),
     raw_calendar_dir: Path | str | None = None,
     output_path: Path | str | None = None,
+    auto_expand_range: bool = False,
 ) -> pl.DataFrame:
     """
     지정된 날짜 범위의 달력 및 공휴일 마스터 DataFrame을 생성합니다.
@@ -112,16 +154,28 @@ def build_calendar_master(
     - month_sin, month_cos: Float32
     - weekday_sin, weekday_cos: Float32
     """
-    if start_date > end_date:
-        raise ValueError(
-            f"시작일({start_date})은 종료일({end_date})보다 클 수 없습니다."
-        )
-
     raw_dir = (
         Path(raw_calendar_dir)
         if raw_calendar_dir is not None
         else RAW_DATA_DIR / "calendar"
     )
+
+    if start_date > end_date:
+        raise ValueError(
+            f"시작일({start_date})은 종료일({end_date})보다 클 수 없습니다."
+        )
+
+    if auto_expand_range:
+        min_yr, max_yr = infer_calendar_year_bounds(
+            raw_dir,
+            default_start_year=start_date.year,
+            default_end_year=end_date.year,
+        )
+        if min_yr < start_date.year:
+            start_date = date(min_yr, 1, 1)
+        if max_yr > end_date.year:
+            end_date = date(max_yr, 12, 31)
+
     holidays = load_holidays_from_raw_dir(raw_dir)
     holiday_dates = sorted(holidays)
 
@@ -191,9 +245,7 @@ def build_calendar_master(
 
     if output_path is None:
         output_path = REFERENCE_DATA_DIR / "calendar_master.parquet"
-    out_p = Path(output_path)
-    out_p.parent.mkdir(parents=True, exist_ok=True)
-    df_master.write_parquet(out_p)
+    out_p = atomic_write_parquet(df_master, output_path)
     logger.info(f"달력 마스터 저장 완료: {out_p} ({len(df_master)}일자)")
 
     return df_master
@@ -227,6 +279,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="출력 Parquet 경로 (기본값: data/reference/calendar_master.parquet)",
     )
+    parser.add_argument(
+        "--auto-expand",
+        action="store_true",
+        help="원천 JSON에 신규 연도가 있으면 달력 마스터 종료 연도를 자동 확장",
+    )
     return parser
 
 
@@ -237,6 +294,7 @@ def main(argv: list[str] | None = None) -> pl.DataFrame:
         end_date=date.fromisoformat(args.end_date),
         raw_calendar_dir=args.raw_dir,
         output_path=args.output,
+        auto_expand_range=args.auto_expand,
     )
 
 

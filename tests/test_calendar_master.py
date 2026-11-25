@@ -14,6 +14,7 @@ import pytest
 from busan_metro_congestion.config import SAMPLES_DIR
 from scripts.build_calendar_master import (
     build_calendar_master,
+    infer_calendar_year_bounds,
     load_holidays_from_raw_dir,
     main,
 )
@@ -62,13 +63,26 @@ def test_build_calendar_master_range_and_schema(tmp_path: Path) -> None:
     for col in expected_cols:
         assert df[col].is_null().sum() == 0, f"컬럼 {col}에 결측치가 존재합니다."
 
-    # 4. 삼각함수 주기 피처 수치 범위 및 원주 불변식 검증
-    assert (df["month_sin"] >= -1.0).all() and (df["month_sin"] <= 1.0).all()
-    assert (df["month_cos"] >= -1.0).all() and (df["month_cos"] <= 1.0).all()
-    assert (df["weekday_sin"] >= -1.0).all() and (df["weekday_sin"] <= 1.0).all()
-    assert (df["weekday_cos"] >= -1.0).all() and (df["weekday_cos"] <= 1.0).all()
-    assert ((df["month_sin"] ** 2 + df["month_cos"] ** 2 - 1.0).abs() < 1e-4).all()
-    assert ((df["weekday_sin"] ** 2 + df["weekday_cos"] ** 2 - 1.0).abs() < 1e-4).all()
+    # 4. 삼각함수 주기 피처 주기성 및 기준점 값 검증
+    # 12월(2*pi) -> sin=0, cos=1 / 3월(pi/2) -> sin=1, cos=0
+    dec_row = df.filter(pl.col("date") == date(2024, 12, 1))
+    mar_row = df.filter(pl.col("date") == date(2024, 3, 1))
+    assert pytest.approx(dec_row["month_sin"][0], abs=1e-5) == 0.0
+    assert pytest.approx(dec_row["month_cos"][0], abs=1e-5) == 1.0
+    assert pytest.approx(mar_row["month_sin"][0], abs=1e-5) == 1.0
+    assert pytest.approx(mar_row["month_cos"][0], abs=1e-5) == 0.0
+    # 일요일(weekday=7 -> 2*pi) -> sin=0, cos=1 / 월요일(weekday=1)과 토요일(weekday=6)은 cos 대칭
+    sun_row = df.filter(pl.col("date") == date(2024, 6, 2))
+    mon_row = df.filter(pl.col("date") == date(2024, 6, 3))
+    sat_row = df.filter(pl.col("date") == date(2024, 6, 1))
+    assert pytest.approx(sun_row["weekday_sin"][0], abs=1e-5) == 0.0
+    assert pytest.approx(sun_row["weekday_cos"][0], abs=1e-5) == 1.0
+    assert (
+        pytest.approx(mon_row["weekday_cos"][0], abs=1e-5) == sat_row["weekday_cos"][0]
+    )
+    assert (
+        pytest.approx(mon_row["weekday_sin"][0], abs=1e-5) == -sat_row["weekday_sin"][0]
+    )
 
 
 def test_major_holidays_dedup_and_non_holiday_filtering(tmp_path: Path) -> None:
@@ -212,3 +226,139 @@ def test_build_calendar_master_cli_and_default_full_range(tmp_path: Path) -> Non
     assert len(df) == 4018
     assert df["date"].min() == date(2016, 1, 1)
     assert df["date"].max() == date(2026, 12, 31)
+
+
+def test_build_calendar_master_auto_expand_range(tmp_path: Path) -> None:
+    """auto_expand_range=True/False, 과거·미래 양방향 확장, CLI --auto-expand, 날짜 역전 예외를 검증합니다."""
+    raw_dir = tmp_path / "calendar"
+    raw_dir.mkdir()
+    (raw_dir / "holidays_2028.json").write_text(
+        json.dumps(
+            {
+                "response": {
+                    "header": {"resultCode": "00", "resultMsg": "NORMAL SERVICE."},
+                    "body": {
+                        "items": {
+                            "item": [
+                                {
+                                    "dateKind": "01",
+                                    "dateName": "신정",
+                                    "isHoliday": "Y",
+                                    "locdate": 20280101,
+                                    "seq": 1,
+                                }
+                            ]
+                        },
+                        "totalCount": 1,
+                    },
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    # 1. auto_expand_range=False(기본값)일 때는 미래 연도 JSON이 있어도 지정 범위 유지
+    df_fixed = build_calendar_master(
+        start_date=date(2026, 1, 1),
+        end_date=date(2026, 12, 31),
+        raw_calendar_dir=raw_dir,
+        output_path=tmp_path / "fixed_calendar.parquet",
+        auto_expand_range=False,
+    )
+    assert df_fixed["date"].min() == date(2026, 1, 1)
+    assert df_fixed["date"].max() == date(2026, 12, 31)
+
+    # 2. auto_expand_range=True일 때 미래 연도로 자동 확장
+    out_file = tmp_path / "expanded_calendar.parquet"
+    df = build_calendar_master(
+        start_date=date(2026, 1, 1),
+        end_date=date(2026, 12, 31),
+        raw_calendar_dir=raw_dir,
+        output_path=out_file,
+        auto_expand_range=True,
+    )
+    assert df["date"].min() == date(2026, 1, 1)
+    assert df["date"].max() == date(2028, 12, 31)
+    assert df.filter(pl.col("date") == date(2028, 1, 1))["is_holiday"][0] is True
+
+    # 3. 과거 연도 JSON 추가 + CLI --auto-expand 플래그로 양방향 확장
+    (raw_dir / "holidays_2024.json").write_text(
+        json.dumps(
+            {
+                "response": {
+                    "header": {"resultCode": "00", "resultMsg": "NORMAL SERVICE."},
+                    "body": {"items": "", "totalCount": 0},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    cli_out = tmp_path / "cli_expanded.parquet"
+    df_cli = main(
+        [
+            "--start-date",
+            "2026-01-01",
+            "--end-date",
+            "2026-12-31",
+            "--raw-dir",
+            str(raw_dir),
+            "--output",
+            str(cli_out),
+            "--auto-expand",
+        ]
+    )
+    assert df_cli["date"].min() == date(2024, 1, 1)
+    assert df_cli["date"].max() == date(2028, 12, 31)
+
+    # 4. 날짜 역전 입력은 auto_expand_range=True여도 반드시 ValueError 발생
+    with pytest.raises(ValueError, match="시작일"):
+        build_calendar_master(
+            start_date=date(2026, 1, 1),
+            end_date=date(2025, 1, 1),
+            raw_calendar_dir=raw_dir,
+            output_path=tmp_path / "invalid.parquet",
+            auto_expand_range=True,
+        )
+
+
+def test_infer_calendar_year_bounds_edge_cases(tmp_path: Path) -> None:
+    """infer_calendar_year_bounds의 빈/미존재 디렉터리, 파일명 없는 locdate 추출, 손상 JSON 무시 동작을 검증합니다."""
+    # 1. 미존재 디렉터리 -> 기본값 반환
+    assert infer_calendar_year_bounds(
+        tmp_path / "missing", default_start_year=2020, default_end_year=2025
+    ) == (2020, 2025)
+
+    raw_dir = tmp_path / "raw_bounds"
+    raw_dir.mkdir()
+    # 2. 빈 디렉터리 -> 기본값 반환
+    assert infer_calendar_year_bounds(
+        raw_dir, default_start_year=2020, default_end_year=2025
+    ) == (2020, 2025)
+
+    # 3. 파일명에 연도가 없어도 내부 locdate에서 연도 추출, 빈 items 파일명으로 종료 연도 확장, 손상 JSON은 안전 스킵
+    (raw_dir / "extra_custom.json").write_text(
+        json.dumps(
+            {
+                "response": {
+                    "body": {
+                        "items": {
+                            "item": [
+                                {"locdate": 20180505, "isHoliday": "Y"},
+                            ]
+                        }
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    (raw_dir / "holidays_2029.json").write_text(
+        json.dumps({"response": {"body": {"items": "", "totalCount": 0}}}),
+        encoding="utf-8",
+    )
+    (raw_dir / "corrupted.json").write_text("{invalid json", encoding="utf-8")
+
+    assert infer_calendar_year_bounds(
+        raw_dir, default_start_year=2020, default_end_year=2025
+    ) == (2018, 2029)
