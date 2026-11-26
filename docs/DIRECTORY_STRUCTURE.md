@@ -47,6 +47,12 @@ busan-metro-congestion/
 │       ├── metrics.py             # 논문 평가 지표 함수 (MAE, RMSE, R², Pearson r, WAPE, Peak MAE)
 │       └── predict.py             # Set 1(13종) 운영 배치 추론, 산출물 스키마 검증 및 원자적 저장
 │
+├── skills/                        # 자연어 AUI용 프롬프트 형식 Skill
+│   └── busan-metro/
+│       ├── SKILL.md               # 조회 API 호출 규칙, 역명·호선·시간대 정규화, 예외 안내
+│       └── references/
+│           └── scenarios.md       # 대표 자연어 질의별 기대 호출·응답 검증 시나리오
+│
 ├── tests/                         # 단위 및 통합 테스트 슈트
 │
 ├── artifacts/                     # 모델 산출물 및 평가 결과 저장소
