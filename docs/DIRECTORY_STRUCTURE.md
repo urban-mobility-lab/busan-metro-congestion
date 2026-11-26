@@ -37,13 +37,16 @@ busan-metro-congestion/
 │   │   ├── subway.py              # 지하철 승하차 데이터 정제 및 시간대별 통행 압력/혼잡도 산출
 │   │   ├── weather.py             # 기상청 단기예보 정제 및 결측 보정
 │   │   ├── festival.py            # 부산 축제 정보 1.5km 반경 공간 매핑
-│   │   └── features.py            # 데이터 결합, Cyclical/Target 인코딩 및 최종 Parquet 출력
+│   │   ├── features.py            # 데이터 결합, Cyclical/Target 인코딩 및 최종 Parquet 출력
+│   │   └── history_features.py    # D-2일까지의 실적만 쓰는 과거 수요 Feature (전날 17시 예측)
 │   │
 │   └── modeling/                  # 머신러닝/딥러닝 모델링, 평가 및 배치 추론 모듈
 │       ├── __init__.py
 │       ├── baseline.py            # Fast Track: Random Forest / LightGBM 회귀 모델 학습
 │       ├── lstm_net.py            # Accurate Track: PyTorch 시계열 LSTM 네트워크 및 Dataset
 │       ├── ensemble.py            # Two-Track 가중치 블렌딩 앙상블 (RF + LGBM + LSTM)
+│       ├── day_ahead_lstm.py      # v2: 168시간 인코더·24시간 동시 출력 Seq2Seq LSTM (역 임베딩)
+│       ├── compare_v2.py          # v2: 운영 피처 v1.0-baseline 대비 홀드아웃 비교 평가
 │       ├── metrics.py             # 논문 평가 지표 함수 (MAE, RMSE, R², Pearson r, WAPE, Peak MAE)
 │       └── predict.py             # Set 1(13종) 운영 배치 추론, 산출물 스키마 검증 및 원자적 저장
 │
@@ -54,7 +57,8 @@ busan-metro-congestion/
 │   │   ├── checkpoints/           # 학습된 모델 가중치, Scaler, 타깃 인코더 및 매니페스트 (.gitignore 격리)
 │   │   └── metrics.json           # 운영 Set 1 모델 평가 지표 파일
 │   └── ablation/                  # 5대 Feature Group(Set 0~4) 2-Track 롤링·홀드아웃 평가 산출물 및 실행 시각별 결과 표
-│       └── checkpoints/           # Ablation 튜닝·트랙별 체크포인트 및 Optuna DB (.gitignore 격리)
+│       ├── checkpoints/           # Ablation 튜닝·트랙별 체크포인트 및 Optuna DB (.gitignore 격리)
+│       └── v2/                    # 운영 피처 v2 모델의 v1.0-baseline 대비 비교 결과 (JSON·Markdown)
 │
 ├── data/                          # 데이터 생명주기 격리 디렉터리
 │   ├── reference/                 # 룩업 테이블, 격자 위경도 매핑, 달력 마스터 참조 파일
