@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>부산 도시철도 시간대별 이용 예측</title>
+    <link rel="stylesheet" href="style.css?v=20261124c" />
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>부산 도시철도 시간대별 이용 예측</h1>
+      <p class="subtitle">
+        1~4호선 역의 <strong>시간당 승차+하차 합계 인원</strong> 예측입니다. 승강장·열차 혼잡률(%)이 아닙니다.
+      </p>
+      <p id="model-info" class="model-info" aria-live="polite">모델 정보를 불러오는 중…</p>
+    </header>
+
+    <section id="mock-panel" class="mock-panel" hidden>
+      <label for="mock-scenario">목업 모드 · 예측 응답 시나리오</label>
+      <select id="mock-scenario"></select>
+      <span class="hint">API 머지 전 예시 데이터입니다. 실제 수치가 아닙니다.</span>
+    </section>
+
+    <nav class="tabs" role="tablist">
+      <button id="tab-station" class="tab active" type="button" role="tab" aria-selected="true">역별 조회</button>
+      <button id="tab-route" class="tab" type="button" role="tab" aria-selected="false">경로 조회</button>
+    </nav>
+
+    <section id="station-view">
+    <form id="query-form" class="query-form">
+      <div class="field">
+        <label for="line-select">호선</label>
+        <select id="line-select" required disabled>
+          <option value="">불러오는 중…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="station-select">역</label>
+        <select id="station-select" required disabled>
+          <option value="">호선을 먼저 고르세요</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="date-input">날짜</label>
+        <input id="date-input" type="date" required disabled />
+        <span id="date-hint" class="hint"></span>
+      </div>
+      <button id="submit-btn" type="submit" disabled>조회</button>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+
+    <main id="result" hidden>
+      <div id="template-banner" class="template-banner" hidden>
+        ⚠ 이 결과는 <strong>template 데이터(임의값)</strong>입니다. 실제 예측이 아니므로 판단에 사용하지 마세요.
+      </div>
+
+      <h2 id="result-title"></h2>
+      <p id="result-meta" class="meta"></p>
+      <p id="transfer-note" class="note" hidden></p>
+
+      <div class="cards">
+        <div class="card peak">
+          <div class="card-label">가장 붐비는 시간</div>
+          <div id="peak-hour" class="card-value"></div>
+          <div id="peak-value" class="card-sub"></div>
+        </div>
+        <div class="card quiet">
+          <div class="card-label">가장 한산한 시간 <span class="hint">(운행 시간대 중)</span></div>
+          <div id="quiet-hour" class="card-value"></div>
+          <div id="quiet-value" class="card-sub"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">하루 합계 (예측)</div>
+          <div id="total-value" class="card-value"></div>
+          <div id="total-sub" class="card-sub"></div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="chart" aria-label="시간대별 예측 인원과 과거 대표값 그래프" role="img"></canvas>
+      </div>
+      <p class="legend-note">
+        막대: 예측 인원(<span class="swatch peak-swatch"></span> 가장 붐빔,
+        <span class="swatch quiet-swatch"></span> 가장 한산) · 선: 과거 대표값(같은 역·요일·시간대)
+      </p>
+
+      <details class="table-wrap">
+        <summary>시간대별 수치 표</summary>
+        <table>
+          <thead>
+            <tr><th>시간대</th><th>예측 인원</th><th>과거 대표값</th><th>차이</th></tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </details>
+    </main>
+    </section>
+
+    <section id="route-view" hidden>
+      <form id="route-form" class="query-form">
+        <div class="field">
+          <label for="route-from">출발역</label>
+          <select id="route-from" required disabled>
+            <option value="">불러오는 중…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="route-to">도착역</label>
+          <select id="route-to" required disabled>
+            <option value="">불러오는 중…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="route-date">날짜</label>
+          <input id="route-date" type="date" required disabled />
+        </div>
+        <div class="field">
+          <label for="route-time">출발 시각</label>
+          <input id="route-time" type="time" value="12:00" required disabled />
+        </div>
+        <button id="route-submit" type="submit" disabled>조회</button>
+      </form>
+      <p class="hint route-hint">
+        환승 2회까지 가장 빨리 도착하는 경로를 찾습니다. 역 도착 시각과 환승 도보 시간은 부산교통공사
+        열차시각표(표준 시각) 기준이고, 인원은 각 역에 도착하는 시간대의 예측값입니다.
+      </p>
+
+      <div id="route-status" class="status" role="status" aria-live="polite" hidden></div>
+
+      <main id="route-result" hidden>
+        <div id="route-template-banner" class="template-banner" hidden>
+          ⚠ 일부 역의 인원이 <strong>template 데이터(임의값)</strong>입니다. 실제 예측이 아니므로 판단에 사용하지 마세요.
+        </div>
+        <h2 id="route-title"></h2>
+        <p id="route-meta" class="meta"></p>
+        <ol id="route-timeline" class="timeline"></ol>
+        <p class="legend-note">
+          막대: 도착 시간대의 예측 인원(<span class="swatch peak-swatch"></span> 경로 중 가장 붐빔) ·
+          괄호: 평소 값(같은 역·요일·시간대). 역 전체의 시간당 승하차 인원이며 열차 안 혼잡률이 아닙니다.
+        </p>
+      </main>
+    </section>
+
+    <!-- Chart.js 4.4.1: 오프라인 시연을 위해 로컬 사본을 먼저 쓰고, 없으면 CDN에서 받는다 -->
+    <script src="vendor/chart.umd.js"></script>
+    <script>
+      window.Chart ||
+        document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"><\/script>');
+    </script>
+    <script src="config.js?v=20261124c"></script>
+    <script src="mock/stations.js?v=20261124c"></script>
+    <script src="mock/mock-api.js?v=20261124c"></script>
+    <script src="app.js?v=20261124c"></script>
+    <script src="data/timetable.js?v=20261124c"></script>
+    <script src="route.js?v=20261124c"></script>
+  </body>
+</html>
